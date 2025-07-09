@@ -111,18 +111,36 @@ public class PermissionScanService : IPermissionScanService
             GenerateSummary(result, allEndpoints, options);
             progress?.Increment(10);
 
-            // Step 4: Handle mismatched permissions interactively (temporarily disabled to fix progress bar)
-            // TODO: Move this outside of progress bar context
-            // if (mismatchedPermissions.Any() && !options.AcceptAllSuggestedPermissions)
-            // {
-            //     await HandleMismatchedPermissionsInteractivelyAsync(mismatchedPermissions, options);
-            // }
-
-            // Step 5: Show final mismatch table if needed
+            // Step 4: Handle mismatched permissions interactively (after progress bar completes)
             if (mismatchedPermissions.Any())
             {
-                // Don't show during progress bar - this will be handled outside
-                // _consoleUIService.ShowMismatchedPermissionsTable(mismatchedPermissions);
+                if (options.AcceptAllSuggestedPermissions)
+                {
+                    // Auto-accept all suggestions, just show what was done
+                    foreach (var (projectName, endpoint) in mismatchedPermissions)
+                    {
+                        _consoleUIService.ShowSuccess($"✅ Auto-accepted suggestion for {projectName}/{endpoint.ClassName}: '{endpoint.ExistingPermission}' → '{endpoint.SuggestedPermission}'");
+                    }
+                }
+                else
+                {
+                    // Show mismatched permissions table and handle interactively
+                    _consoleUIService.ShowMismatchedPermissionsTable(mismatchedPermissions);
+                    
+                    AnsiConsole.WriteLine();
+                    var handleInteractively = AnsiConsole.Confirm(
+                        $"[yellow]Would you like to review and update these mismatched permissions interactively?[/]", 
+                        defaultValue: true);
+                    
+                    if (handleInteractively)
+                    {
+                        await HandleMismatchedPermissionsInteractivelyAsync(mismatchedPermissions, options);
+                    }
+                    else
+                    {
+                        _consoleUIService.ShowInfo("Skipped interactive permission review. Warnings remain in the report.");
+                    }
+                }
             }
 
             return result;
@@ -248,39 +266,71 @@ public class PermissionScanService : IPermissionScanService
         List<(string Project, EndpointInfo Endpoint)> mismatchedPermissions, 
         ScanOptions options)
     {
-        // Remove the ShowInfo call to prevent console output during progress bar
-        var approved = new List<(string Project, EndpointInfo Endpoint)>();
-        var remaining = new List<(string Project, EndpointInfo Endpoint)>();
+        _consoleUIService.ShowInfo($"🔍 Reviewing {mismatchedPermissions.Count} mismatched permission(s) interactively...");
+        AnsiConsole.WriteLine();
+
+        var toUpdate = new List<(string Project, EndpointInfo Endpoint, string NewPermission)>();
+        var toKeep = new List<(string Project, EndpointInfo Endpoint)>();
 
         foreach (var (projectName, endpoint) in mismatchedPermissions)
         {
             try
             {
-                var isApproved = await _consoleUIService.PromptPermissionCorrectionAsync(endpoint, projectName);
+                var decision = await _consoleUIService.PromptPermissionCorrectionAsync(endpoint, projectName);
                 
-                if (isApproved)
+                if (decision)
                 {
-                    approved.Add((projectName, endpoint));
+                    // User wants to accept the suggestion
+                    toUpdate.Add((projectName, endpoint, endpoint.SuggestedPermission!));
                 }
                 else
                 {
-                    remaining.Add((projectName, endpoint));
+                    // User wants to keep existing permission
+                    toKeep.Add((projectName, endpoint));
                 }
             }
             catch (Exception ex)
             {
                 _consoleUIService.ShowWarning($"Error handling permission for {projectName}/{endpoint.ClassName}: {ex.Message}");
-                remaining.Add((projectName, endpoint));
+                toKeep.Add((projectName, endpoint));
             }
         }
 
-        if (approved.Any())
+        // Show summary of decisions
+        AnsiConsole.WriteLine();
+        _consoleUIService.ShowInfo("📋 Interactive Review Summary:");
+
+        if (toUpdate.Any())
         {
-            _consoleUIService.ShowSuccess($"Approved {approved.Count} permission corrections.");
+            AnsiConsole.MarkupLine("[green]✅ Permissions to update:[/]");
+            foreach (var (project, endpoint, newPermission) in toUpdate)
+            {
+                AnsiConsole.MarkupLine($"   • {project}/{endpoint.ClassName}: [red]{endpoint.ExistingPermission}[/] → [green]{newPermission}[/]");
+            }
+            AnsiConsole.WriteLine();
+            
+            _consoleUIService.ShowWarning("⚠️  Note: These changes need to be applied manually in your code.");
+            _consoleUIService.ShowInfo("💡 Tip: Use Find & Replace in your IDE to update RequirePermission() calls.");
         }
 
-        // Update the original list to only contain non-approved items
-        mismatchedPermissions.Clear();
-        mismatchedPermissions.AddRange(remaining);
+        if (toKeep.Any())
+        {
+            AnsiConsole.MarkupLine("[yellow]📌 Permissions to keep as custom:[/]");
+            foreach (var (project, endpoint) in toKeep)
+            {
+                AnsiConsole.MarkupLine($"   • {project}/{endpoint.ClassName}: [yellow]{endpoint.ExistingPermission}[/] (marked as custom)");
+            }
+            AnsiConsole.WriteLine();
+        }
+
+        // Show final action summary
+        if (toUpdate.Any())
+        {
+            _consoleUIService.ShowSuccess($"🎯 Review completed: {toUpdate.Count} permission(s) approved for update, {toKeep.Count} kept as custom.");
+        }
+        else
+        {
+            _consoleUIService.ShowInfo("✅ All mismatched permissions were kept as custom permissions.");
+        }
     }
 } 
