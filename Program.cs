@@ -4,7 +4,19 @@ using Spectre.Console;
 using Spectre.Console.Cli;
 using SyncPermissions.Models;
 using SyncPermissions.Services;
+using System.Text;
 using System.Text.Json;
+
+// Configure console for emoji and Unicode support
+try
+{
+    Console.OutputEncoding = Encoding.UTF8;
+    Console.InputEncoding = Encoding.UTF8;
+}
+catch
+{
+    // Ignore encoding errors on unsupported platforms
+}
 
 // Check if we should run in interactive mode (no arguments) or CLI mode (with arguments)
 if (args.Length == 0)
@@ -74,6 +86,7 @@ public class AppHost
         services.AddSingleton<IOutputService, OutputService>();
         services.AddSingleton<IConfigurationService, ConfigurationService>();
         services.AddSingleton<IInteractiveMenuService, InteractiveMenuService>();
+        services.AddSingleton<IFolderBrowserService, FolderBrowserService>();
         
         return services.BuildServiceProvider();
     }

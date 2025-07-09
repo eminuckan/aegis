@@ -14,6 +14,13 @@ public interface IConfigurationService
 
 public class ConfigurationService : IConfigurationService
 {
+    private readonly IFolderBrowserService _folderBrowser;
+
+    public ConfigurationService(IFolderBrowserService folderBrowser)
+    {
+        _folderBrowser = folderBrowser;
+    }
+
     public AppConfig GetConfiguration(string? configFile = null)
     {
         var configPath = configFile ?? "appsettings.json";
@@ -118,55 +125,28 @@ public class ConfigurationService : IConfigurationService
 
     private async Task<string> PromptForScanPathAsync()
     {
-        Console.WriteLine();
-        Console.WriteLine("No scan path provided. Please enter the path to scan for projects:");
-        Console.WriteLine("Examples:");
-        Console.WriteLine("  ./src/Services");
-        Console.WriteLine("  ../../src/Services");
-        Console.WriteLine("  C:\\MyProject\\src\\Services");
-        Console.WriteLine();
+        var selectedPath = await _folderBrowser.SelectFolderAsync(
+            Directory.GetCurrentDirectory(), 
+            "Select folder to scan for .NET projects:");
 
-        string? path = null;
-        while (string.IsNullOrWhiteSpace(path))
+        if (selectedPath == null)
         {
-            Console.Write("Scan path: ");
-            path = Console.ReadLine();
-
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                Console.WriteLine("Path cannot be empty. Please try again.");
-                continue;
-            }
-
-            try
-            {
-                var resolvedPath = ResolvePath(path);
-                
-                if (!Directory.Exists(resolvedPath))
-                {
-                    Console.WriteLine($"Directory '{resolvedPath}' does not exist. Please enter a valid directory path.");
-                    path = null;
-                    continue;
-                }
-
-                var projectFiles = Directory.GetFiles(resolvedPath, "*.csproj", SearchOption.AllDirectories);
-                if (projectFiles.Length == 0)
-                {
-                    Console.WriteLine($"No .csproj files found in '{resolvedPath}'. Please enter a path containing .NET projects.");
-                    path = null;
-                    continue;
-                }
-
-                Console.WriteLine($"Found {projectFiles.Length} project(s). Proceeding with scan...");
-                return resolvedPath;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Invalid path '{path}': {ex.Message}");
-                path = null;
-            }
+            throw new OperationCanceledException("Folder selection was cancelled.");
         }
 
-        return path; // This should never be reached, but keeps compiler happy
+        var resolvedPath = ResolvePath(selectedPath);
+
+        if (!Directory.Exists(resolvedPath))
+        {
+            throw new DirectoryNotFoundException($"Selected directory does not exist: {resolvedPath}");
+        }
+
+        var projectFiles = Directory.GetFiles(resolvedPath, "*.csproj", SearchOption.AllDirectories);
+        if (projectFiles.Length == 0)
+        {
+            throw new InvalidOperationException($"No .csproj files found in '{resolvedPath}'. Please select a folder containing .NET projects.");
+        }
+
+        return resolvedPath;
     }
 } 

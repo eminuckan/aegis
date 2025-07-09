@@ -27,23 +27,73 @@ public class InteractiveMenuService : IInteractiveMenuService
     private readonly ISetupWizardService _setupWizard;
     private readonly IConfigurationService _configService;
     private readonly IOutputService _outputService;
+    private readonly IFolderBrowserService _folderBrowser;
 
     public InteractiveMenuService(
         IConsoleUIService consoleUI,
         IPermissionScanService scanService,
         ISetupWizardService setupWizard,
         IConfigurationService configService,
-        IOutputService outputService)
+        IOutputService outputService,
+        IFolderBrowserService folderBrowser)
     {
         _consoleUI = consoleUI;
         _scanService = scanService;
         _setupWizard = setupWizard;
         _configService = configService;
         _outputService = outputService;
+        _folderBrowser = folderBrowser;
     }
 
     public async Task RunAsync()
     {
+        // İlk çalıştırma kontrolü - konfigürasyon yoksa setup wizard'ı çalıştır
+        if (await _setupWizard.ShouldRunSetupAsync())
+        {
+            _consoleUI.ShowWelcomeScreen();
+            
+            AnsiConsole.MarkupLine($"[{WarningColor.ToMarkup()}]⚠️  Configuration not found or incomplete.[/]");
+            AnsiConsole.MarkupLine($"[{DefaultTextColor.ToMarkup()}]Let's set up Aegis for your project![/]");
+            AnsiConsole.WriteLine();
+            
+            var runSetup = AnsiConsole.Confirm(
+                $"[{PrimaryAccent.ToMarkup()}]Would you like to run the setup wizard now?[/]", 
+                defaultValue: true);
+            
+            if (runSetup)
+            {
+                try
+                {
+                    var config = await _setupWizard.RunSetupWizardAsync();
+                    await _setupWizard.SaveConfigurationAsync(config);
+                    
+                    AnsiConsole.WriteLine();
+                    _consoleUI.ShowSuccess("🎉 Setup completed successfully!");
+                    _consoleUI.ShowInfo("You can now use all features of Aegis.");
+                    
+                    AnsiConsole.WriteLine();
+                    AnsiConsole.MarkupLine($"[{DimTextColor.ToMarkup()}]Press any key to continue to the main menu...[/]");
+                    Console.ReadKey(true);
+                }
+                catch (Exception ex)
+                {
+                    _consoleUI.ShowError("Setup failed", ex);
+                    AnsiConsole.WriteLine();
+                    AnsiConsole.MarkupLine($"[{DimTextColor.ToMarkup()}]Press any key to continue anyway...[/]");
+                    Console.ReadKey(true);
+                }
+            }
+            else
+            {
+                _consoleUI.ShowWarning("Skipping setup. Some features may not work properly without configuration.");
+                AnsiConsole.WriteLine();
+                AnsiConsole.MarkupLine($"[{DimTextColor.ToMarkup()}]You can run setup later from the main menu.[/]");
+                AnsiConsole.WriteLine();
+                AnsiConsole.MarkupLine($"[{DimTextColor.ToMarkup()}]Press any key to continue...[/]");
+                Console.ReadKey(true);
+            }
+        }
+        
         while (true)
         {
             _consoleUI.ShowWelcomeScreen();
@@ -634,13 +684,25 @@ public class InteractiveMenuService : IInteractiveMenuService
         var config = _configService.GetConfiguration();
         var currentPath = config.SyncPermissions.DefaultScanPath;
         AnsiConsole.MarkupLine($"[{DimTextColor.ToMarkup()}]Current scan path: {currentPath ?? "Not set"}[/]");
+        AnsiConsole.WriteLine();
         
-        var newPath = AnsiConsole.Ask<string>($"[{SuccessColor.ToMarkup()}]Enter new scan path:[/]");
+        AnsiConsole.MarkupLine("[yellow]Press any key to open folder browser...[/]");
+        Console.ReadKey(true);
+        
+        var selectedPath = await _folderBrowser.SelectFolderAsync(
+            currentPath ?? Directory.GetCurrentDirectory(),
+            "Select new scan path for .NET projects");
+        
+        if (selectedPath == null)
+        {
+            _consoleUI.ShowInfo("Path update cancelled.");
+            return;
+        }
         
         try
         {
             // Path'i validate et
-            var resolvedPath = Path.GetFullPath(newPath);
+            var resolvedPath = Path.GetFullPath(selectedPath);
             if (!Directory.Exists(resolvedPath))
             {
                 _consoleUI.ShowError($"Directory does not exist: {resolvedPath}");
@@ -660,10 +722,10 @@ public class InteractiveMenuService : IInteractiveMenuService
             }
             
             // Configuration'ı güncelle
-            config.SyncPermissions.DefaultScanPath = newPath;
+            config.SyncPermissions.DefaultScanPath = selectedPath;
             await _configService.UpdateConfigurationAsync(config);
             
-            _consoleUI.ShowSuccess($"✅ Scan path updated to: {newPath}");
+            _consoleUI.ShowSuccess($"✅ Scan path updated to: {selectedPath}");
         }
         catch (Exception ex)
         {

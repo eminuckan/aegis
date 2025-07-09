@@ -13,6 +13,13 @@ public interface ISetupWizardService
 
 public class SetupWizardService : ISetupWizardService
 {
+    private readonly IFolderBrowserService _folderBrowser;
+
+    public SetupWizardService(IFolderBrowserService folderBrowser)
+    {
+        _folderBrowser = folderBrowser;
+    }
+
     public async Task<bool> ShouldRunSetupAsync()
     {
         var configPath = "appsettings.json";
@@ -103,20 +110,31 @@ public class SetupWizardService : ISetupWizardService
     private async Task ConfigureScanPathAsync(AppConfig config)
     {
         AnsiConsole.MarkupLine("[bold cyan1]📁 Step 1: Configure Scan Path[/]");
+        AnsiConsole.MarkupLine("[dim]Select the folder that contains your .NET projects to scan.[/]");
         AnsiConsole.WriteLine();
         
-        var scanPath = AnsiConsole.Ask<string>(
-            "[green]Enter the path to scan for projects[/] [dim](e.g., ./src/Services, ../../src/Services)[/]:");
+        AnsiConsole.MarkupLine("[yellow]Press any key to open folder browser...[/]");
+        Console.ReadKey(true);
         
-        // Validate path
-        while (!await ValidateScanPathAsync(scanPath))
+        var selectedPath = await _folderBrowser.SelectFolderAsync(
+            Directory.GetCurrentDirectory(),
+            "Step 1: Select folder to scan for .NET projects");
+        
+        if (selectedPath == null)
         {
-            AnsiConsole.MarkupLine("[red]❌ Invalid path. Please try again.[/]");
-            scanPath = AnsiConsole.Ask<string>("[green]Enter a valid path to scan[/]:");
+            AnsiConsole.MarkupLine("[yellow]⚠️ Setup cancelled. You can run setup later.[/]");
+            throw new OperationCanceledException("Setup was cancelled by user.");
         }
         
-        config.SyncPermissions.DefaultScanPath = scanPath;
-        AnsiConsole.MarkupLine($"[green]✅ Scan path set to: {scanPath}[/]");
+        // Validate the selected path
+        if (!await ValidateScanPathAsync(selectedPath))
+        {
+            AnsiConsole.MarkupLine("[red]❌ Selected folder is not valid for scanning.[/]");
+            throw new InvalidOperationException("Selected path does not contain .NET projects.");
+        }
+        
+        config.SyncPermissions.DefaultScanPath = selectedPath;
+        AnsiConsole.MarkupLine($"[green]✅ Scan path set to: {selectedPath}[/]");
         AnsiConsole.WriteLine();
     }
 
