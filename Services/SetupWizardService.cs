@@ -22,7 +22,7 @@ public class SetupWizardService : ISetupWizardService
 
     public async Task<bool> ShouldRunSetupAsync()
     {
-        var configPath = "appsettings.json";
+        var configPath = "aegis-config.json";
         
         // Check if config file exists and has required settings
         if (!File.Exists(configPath))
@@ -78,7 +78,7 @@ public class SetupWizardService : ISetupWizardService
 
     public async Task SaveConfigurationAsync(AppConfig config, string? configPath = null)
     {
-        var path = configPath ?? "appsettings.json";
+        var path = configPath ?? "aegis-config.json";
         
         var options = new JsonSerializerOptions
         {
@@ -97,7 +97,7 @@ public class SetupWizardService : ISetupWizardService
         var panel = new Panel(
             "[bold yellow]🚀 Welcome to Propmate Permission Scanner Setup![/]\n\n" +
             "[dim]This wizard will help you configure the tool for your project.[/]\n" +
-            "[dim]You can modify these settings later in appsettings.json[/]")
+            "[dim]You can modify these settings later in aegis-config.json[/]")
             .Border(BoxBorder.Rounded)
             .BorderColor(Color.Cyan1)
             .Header("[bold white] Setup Wizard [/]")
@@ -238,7 +238,7 @@ public class SetupWizardService : ISetupWizardService
         }
         else
         {
-            AnsiConsole.MarkupLine("[yellow]ℹ️  You can customize conventions manually in appsettings.json[/]");
+            AnsiConsole.MarkupLine("[yellow]ℹ️  You can customize conventions manually in aegis-config.json[/]");
             config.Conventions.HttpMethodActions = new Dictionary<string, string>();
             config.Conventions.FeatureToResource = new Dictionary<string, string>();
         }
@@ -278,7 +278,7 @@ public class SetupWizardService : ISetupWizardService
             $"[dim]Verbose:[/] [cyan1]{config.SyncPermissions.Verbose}[/]\n" +
             $"[dim]Auto-Accept Suggestions:[/] [cyan1]{config.SyncPermissions.AcceptAllSuggestedPermissions}[/]\n" +
             $"[dim]Conventions:[/] [cyan1]{(config.Conventions.HttpMethodActions.Any() ? "Default" : "Custom")}[/]\n\n" +
-            "[dim]You can now run scans or modify appsettings.json for advanced options.[/]")
+            "[dim]You can now run scans or modify aegis-config.json for advanced options.[/]")
             .Border(BoxBorder.Rounded)
             .BorderColor(Color.Green)
             .Header("[bold white] Configuration Summary [/]")

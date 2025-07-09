@@ -393,6 +393,6 @@ FodyWeavers.xsd
 .DS_Store
 
 # Aegis specific
-appsettings.Development.json
-appsettings.Local.json
+aegis-config.Development.json
+aegis-config.Local.json
 *.nupkg 

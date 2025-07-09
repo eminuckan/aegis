@@ -23,7 +23,7 @@ public class ConfigurationService : IConfigurationService
 
     public AppConfig GetConfiguration(string? configFile = null)
     {
-        var configPath = configFile ?? "appsettings.json";
+        var configPath = configFile ?? "aegis-config.json";
         
         var config = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
@@ -38,7 +38,7 @@ public class ConfigurationService : IConfigurationService
 
     public async Task UpdateConfigurationAsync(AppConfig config, string? configFile = null)
     {
-        var configPath = configFile ?? "appsettings.json";
+        var configPath = configFile ?? "aegis-config.json";
         
         var options = new JsonSerializerOptions
         {

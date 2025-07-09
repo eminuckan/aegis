@@ -14,7 +14,7 @@ A powerful CLI tool to automatically discover and manage permissions in .NET mic
 - ✅ **Validation**: Validates existing permissions against conventions and reports mismatches
 - 📄 **JSON Output**: Structured output format for integration with other tools
 - 🎯 **Smart Detection**: Categorizes endpoints as Public, AuthOnly, NeedsPermission, AlreadyProtected, or MismatchedPermission
-- ⚙️ **Configuration Support**: Uses appsettings.json for default values and convention mappings
+- ⚙️ **Configuration Support**: Uses aegis-config.json for default values and convention mappings
 - 🤝 **Interactive Mode**: User-friendly menu system when run without arguments
 - 🚀 **Cross-Platform**: Available as .NET Global Tool and self-contained executables
 
@@ -74,7 +74,7 @@ aegis validate --path ./src/Services
 
 ## ⚙️ Configuration
 
-Create an `appsettings.json` file in your project root or working directory:
+Create an `aegis-config.json` file in your project root or working directory:
 
 ```json
 {
