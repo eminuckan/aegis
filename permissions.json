@@ -1,0 +1,433 @@
+{
+  "toolVersion": "1.0.0",
+  "generatedAt": "2025-07-12T17:15:57.023565Z",
+  "generatedBy": "AEGIS v1.0 - Advanced Enterprise Guardian Intelligence System",
+  "projects": [
+    {
+      "name": "Auth.Api",
+      "path": "C:\\Users\\memin\\source\\repos\\eminuckan\\PropmateV2\\src\\Services\\Auth.Api",
+      "discoveredPermissions": [
+        {
+          "name": "Clients.Create",
+          "description": "Create clients permission",
+          "metadata": {
+            "httpMethod": "POST",
+            "route": "/api/v1/clients",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Clients.Read",
+          "description": "Read clients permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/clients/{clientAppId}",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Clients.Read",
+          "description": "Read clients permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/clients",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Permissions.Create",
+          "description": "Create permissions permission",
+          "metadata": {
+            "httpMethod": "POST",
+            "route": "/api/v1/permissions/seed",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Permissions.Read",
+          "description": "Read permissions permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/permissions",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Roles.Create",
+          "description": "Create roles permission",
+          "metadata": {
+            "httpMethod": "POST",
+            "route": "/api/v1/users/{userId:guid}/roles",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Roles.Create",
+          "description": "Create roles permission",
+          "metadata": {
+            "httpMethod": "POST",
+            "route": "/api/v1/roles",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Roles.Delete",
+          "description": "Delete roles permission",
+          "metadata": {
+            "httpMethod": "DELETE",
+            "route": "/api/v1/roles/{roleId:guid}",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Roles.Delete",
+          "description": "Delete roles permission",
+          "metadata": {
+            "httpMethod": "DELETE",
+            "route": "/api/v1/users/{userId:guid}/roles/{roleId:guid}",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Roles.Update",
+          "description": "Update roles permission",
+          "metadata": {
+            "httpMethod": "PUT",
+            "route": "/api/v1/roles/{roleId:guid}",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Roles.Read",
+          "description": "Read roles permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/roles/{roleId:guid}",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Roles.Read",
+          "description": "Read roles permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/roles",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Roles.Read",
+          "description": "Read roles permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/users/{userId:guid}/permissions",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Roles.Read",
+          "description": "Read roles permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/users/{userId:guid}/roles",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Users.Create",
+          "description": "Create users permission",
+          "metadata": {
+            "httpMethod": "POST",
+            "route": "/api/v1/users",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Users.Create",
+          "description": "Create users permission",
+          "metadata": {
+            "httpMethod": "POST",
+            "route": "/api/v1/tenants/{tenantId:guid}/users/{userId:guid}/deactivate",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Users.Create",
+          "description": "Create users permission",
+          "metadata": {
+            "httpMethod": "POST",
+            "route": "/api/v1/tenants/{tenantId:guid}/users/{userId:guid}/reactivate",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Users.Delete",
+          "description": "Delete users permission",
+          "metadata": {
+            "httpMethod": "DELETE",
+            "route": "/api/v1/tenants/{tenantId:guid}/users/{userId:guid}",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Users.Update",
+          "description": "Update users permission",
+          "metadata": {
+            "httpMethod": "PUT",
+            "route": "/api/v1/users/{userId:guid}",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "Users.Read",
+          "description": "Read users permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/users/{userId:guid}",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "UserProfiles.Create",
+          "description": "Create userprofiles permission",
+          "metadata": {
+            "httpMethod": "POST",
+            "route": "/api/v1/users/me/password",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "UserProfiles.Update",
+          "description": "Update userprofiles permission",
+          "metadata": {
+            "httpMethod": "PUT",
+            "route": "/api/v1/users/me",
+            "project": "Auth.Api"
+          }
+        },
+        {
+          "name": "UserProfiles.Read",
+          "description": "Read userprofiles permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/users/me",
+            "project": "Auth.Api"
+          }
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "name": "Notification.Api",
+      "path": "C:\\Users\\memin\\source\\repos\\eminuckan\\PropmateV2\\src\\Services\\Notification.Api",
+      "discoveredPermissions": [
+        {
+          "name": "Emails.Create",
+          "description": "Create emails permission",
+          "metadata": {
+            "httpMethod": "POST",
+            "route": "/api/v1/notifications/email",
+            "project": "Notification.Api"
+          }
+        },
+        {
+          "name": "Emails.Read",
+          "description": "Read emails permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/notifications/email/logs/{logId:guid}",
+            "project": "Notification.Api"
+          }
+        },
+        {
+          "name": "Emails.Read",
+          "description": "Read emails permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/notifications/email/logs",
+            "project": "Notification.Api"
+          }
+        },
+        {
+          "name": "Sms.Create",
+          "description": "Create sms permission",
+          "metadata": {
+            "httpMethod": "POST",
+            "route": "/api/v1/notifications/sms",
+            "project": "Notification.Api"
+          }
+        },
+        {
+          "name": "Sms.Read",
+          "description": "Read sms permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/notifications/sms/logs/{logId:guid}",
+            "project": "Notification.Api"
+          }
+        },
+        {
+          "name": "Sms.Read",
+          "description": "Read sms permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/notifications/sms/logs",
+            "project": "Notification.Api"
+          }
+        },
+        {
+          "name": "Templates.Create",
+          "description": "Create templates permission",
+          "metadata": {
+            "httpMethod": "POST",
+            "route": "/api/v1/templates",
+            "project": "Notification.Api"
+          }
+        },
+        {
+          "name": "Templates.Read",
+          "description": "Read templates permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/templates/{templateId:guid}",
+            "project": "Notification.Api"
+          }
+        },
+        {
+          "name": "Templates.Read",
+          "description": "Read templates permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/templates",
+            "project": "Notification.Api"
+          }
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "name": "Tenant.Api",
+      "path": "C:\\Users\\memin\\source\\repos\\eminuckan\\PropmateV2\\src\\Services\\Tenant.Api",
+      "discoveredPermissions": [
+        {
+          "name": "Health.Read",
+          "description": "Read health permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/health",
+            "project": "Tenant.Api"
+          }
+        },
+        {
+          "name": "TenantInvitations.Create",
+          "description": "Create tenant\u0131nvitations permission",
+          "metadata": {
+            "httpMethod": "POST",
+            "route": "/api/v1/invitations/accept",
+            "project": "Tenant.Api"
+          }
+        },
+        {
+          "name": "TenantInvitations.Delete",
+          "description": "Delete tenant\u0131nvitations permission",
+          "metadata": {
+            "httpMethod": "DELETE",
+            "route": "/api/v1/invitations/{invitationId:guid}",
+            "project": "Tenant.Api"
+          }
+        },
+        {
+          "name": "TenantInvitations.Create",
+          "description": "Create tenant\u0131nvitations permission",
+          "metadata": {
+            "httpMethod": "POST",
+            "route": "/api/v1/tenants/{tenantId:guid}/invitations",
+            "project": "Tenant.Api"
+          }
+        },
+        {
+          "name": "TenantInvitations.Read",
+          "description": "Read tenant\u0131nvitations permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/tenants/{tenantId:guid}/invitations",
+            "project": "Tenant.Api"
+          }
+        },
+        {
+          "name": "Tenants.Create",
+          "description": "Create tenants permission",
+          "metadata": {
+            "httpMethod": "POST",
+            "route": "/api/v1/tenants",
+            "project": "Tenant.Api"
+          }
+        },
+        {
+          "name": "Tenants.Delete",
+          "description": "Delete tenants permission",
+          "metadata": {
+            "httpMethod": "DELETE",
+            "route": "/api/v1/tenants/{tenantId:guid}",
+            "project": "Tenant.Api"
+          }
+        },
+        {
+          "name": "Tenants.Update",
+          "description": "Update tenants permission",
+          "metadata": {
+            "httpMethod": "PUT",
+            "route": "/api/v1/tenants/{tenantId:guid}",
+            "project": "Tenant.Api"
+          }
+        },
+        {
+          "name": "Tenants.Read",
+          "description": "Read tenants permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/tenants/{tenantId:guid}",
+            "project": "Tenant.Api"
+          }
+        },
+        {
+          "name": "Tenants.Read",
+          "description": "Read tenants permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/tenants",
+            "project": "Tenant.Api"
+          }
+        },
+        {
+          "name": "TenantSettings.Update",
+          "description": "Update tenantsettings permission",
+          "metadata": {
+            "httpMethod": "PUT",
+            "route": "/api/v1/tenants/{tenantId:guid}/settings",
+            "project": "Tenant.Api"
+          }
+        },
+        {
+          "name": "TenantSettings.Read",
+          "description": "Read tenantsettings permission",
+          "metadata": {
+            "httpMethod": "GET",
+            "route": "/api/v1/tenants/{tenantId:guid}/settings",
+            "project": "Tenant.Api"
+          }
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "summary": {
+    "totalEndpoints": 52,
+    "publicEndpoints": 8,
+    "authOnlyEndpoints": 0,
+    "needsPermissionEndpoints": 44,
+    "alreadyProtectedEndpoints": 0,
+    "generatedPermissions": 44,
+    "warnings": []
+  }
+}
