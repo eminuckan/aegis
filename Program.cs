@@ -85,6 +85,7 @@ public class AppHost
         services.AddSingleton<IPermissionGenerator, PermissionGenerator>();
         services.AddSingleton<IOutputService, OutputService>();
         services.AddSingleton<IConfigurationService, ConfigurationService>();
+        services.AddSingleton<ICSharpGeneratorService, CSharpGeneratorService>();
         services.AddSingleton<IInteractiveMenuService, InteractiveMenuService>();
         services.AddSingleton<IFolderBrowserService, FolderBrowserService>();
         
@@ -159,11 +160,17 @@ public sealed class ScanCommand : AsyncCommand<ScanCommand.Settings>
             // Show results
             consoleUI.ShowScanResults(result, scanOptions);
 
+            // Handle mismatched permissions
+            await scanService.HandleMismatchedPermissionsAsync(result, scanOptions);
+
             // Save to file if requested
             if (!string.IsNullOrEmpty(scanOptions.OutputFile))
             {
                 await outputService.WriteJsonAsync(result, scanOptions.OutputFile);
                 consoleUI.ShowSuccess($"Results saved to {scanOptions.OutputFile}");
+
+                // Handle C# file generation after JSON is saved
+                await scanService.HandleCSharpFileGenerationAsync(result, scanOptions, appConfig);
             }
 
             return 0;

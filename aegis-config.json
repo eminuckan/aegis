@@ -1,0 +1,22 @@
+{
+  "syncPermissions": {
+    "defaultScanPath": "C:\\Users\\memin\\source\\repos\\eminuckan\\PropmateV2\\src\\Services",
+    "defaultOutputPath": "permissions.json",
+    "verbose": false,
+    "missingOnly": false,
+    "autoGenerate": true,
+    "acceptAllSuggestedPermissions": false,
+    "generateCSharpFile": true,
+    "cSharpFileName": "AppPermissions.cs",
+    "cSharpNamespace": "Application.Constants"
+  },
+  "conventions": {
+    "httpMethodActions": {
+      "GET": "Read",
+      "POST": "Create",
+      "PUT": "Update",
+      "PATCH": "Update",
+      "DELETE": "Delete"
+    }
+  }
+}

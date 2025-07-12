@@ -6,6 +6,9 @@ namespace SyncPermissions.Services;
 public interface IPermissionScanService
 {
     Task<PermissionDiscoveryResult> ScanAsync(ScanOptions options, ProgressTask? progress = null);
+    Task HandleMismatchedPermissionsAsync(PermissionDiscoveryResult result, ScanOptions options);
+    Task UpdateResultWithCorrectedPermissions(PermissionDiscoveryResult result, List<(string Project, EndpointInfo Endpoint)> correctedPermissions);
+    Task<bool> HandleCSharpFileGenerationAsync(PermissionDiscoveryResult result, ScanOptions options, AppConfig config);
 }
 
 public class PermissionScanService : IPermissionScanService
@@ -14,17 +17,20 @@ public class PermissionScanService : IPermissionScanService
     private readonly IEndpointDiscoverer _endpointDiscoverer;
     private readonly IPermissionGenerator _permissionGenerator;
     private readonly IConsoleUIService _consoleUIService;
+    private readonly ICSharpGeneratorService _csharpGenerator;
 
     public PermissionScanService(
         IProjectScanner projectScanner,
         IEndpointDiscoverer endpointDiscoverer,
         IPermissionGenerator permissionGenerator,
-        IConsoleUIService consoleUIService)
+        IConsoleUIService consoleUIService,
+        ICSharpGeneratorService csharpGenerator)
     {
         _projectScanner = projectScanner;
         _endpointDiscoverer = endpointDiscoverer;
         _permissionGenerator = permissionGenerator;
         _consoleUIService = consoleUIService;
+        _csharpGenerator = csharpGenerator;
     }
 
     public async Task<PermissionDiscoveryResult> ScanAsync(ScanOptions options, ProgressTask? progress = null)
@@ -111,36 +117,11 @@ public class PermissionScanService : IPermissionScanService
             GenerateSummary(result, allEndpoints, options);
             progress?.Increment(10);
 
-            // Step 4: Handle mismatched permissions interactively (after progress bar completes)
+            // Return result with mismatched permissions data for handling outside of progress scope
             if (mismatchedPermissions.Any())
             {
-                if (options.AcceptAllSuggestedPermissions)
-                {
-                    // Auto-accept all suggestions, just show what was done
-                    foreach (var (projectName, endpoint) in mismatchedPermissions)
-                    {
-                        _consoleUIService.ShowSuccess($"✅ Auto-accepted suggestion for {projectName}/{endpoint.ClassName}: '{endpoint.ExistingPermission}' → '{endpoint.SuggestedPermission}'");
-                    }
-                }
-                else
-                {
-                    // Show mismatched permissions table and handle interactively
-                    _consoleUIService.ShowMismatchedPermissionsTable(mismatchedPermissions);
-                    
-                    AnsiConsole.WriteLine();
-                    var handleInteractively = AnsiConsole.Confirm(
-                        $"[yellow]Would you like to review and update these mismatched permissions interactively?[/]", 
-                        defaultValue: true);
-                    
-                    if (handleInteractively)
-                    {
-                        await HandleMismatchedPermissionsInteractivelyAsync(mismatchedPermissions, options);
-                    }
-                    else
-                    {
-                        _consoleUIService.ShowInfo("Skipped interactive permission review. Warnings remain in the report.");
-                    }
-                }
+                // Store mismatched permissions in result for handling after progress bar closes
+                result.MismatchedPermissions = mismatchedPermissions;
             }
 
             return result;
@@ -151,7 +132,55 @@ public class PermissionScanService : IPermissionScanService
         }
     }
 
+    public async Task HandleMismatchedPermissionsAsync(PermissionDiscoveryResult result, ScanOptions options)
+    {
+        var mismatchedPermissions = result.MismatchedPermissions;
+        if (mismatchedPermissions == null || !mismatchedPermissions.Any())
+            return;
 
+        var correctedPermissions = new List<(string Project, EndpointInfo Endpoint)>();
+
+        if (options.AcceptAllSuggestedPermissions)
+        {
+            // Auto-accept all suggestions, just show what was done
+            foreach ((string projectName, EndpointInfo endpoint) in mismatchedPermissions)
+            {
+                var originalPermission = endpoint.ExistingPermission;
+                endpoint.ExistingPermission = endpoint.SuggestedPermission;
+                endpoint.AuthorizationStatus = EndpointAuthorizationStatus.AlreadyProtected;
+                correctedPermissions.Add((projectName, endpoint));
+                _consoleUIService.ShowSuccess($"✅ Auto-accepted suggestion for {projectName}/{endpoint.ClassName}: '{originalPermission}' → '{endpoint.SuggestedPermission}'");
+            }
+        }
+        else
+        {
+            // Show mismatched permissions table and handle interactively
+            _consoleUIService.ShowMismatchedPermissionsTable(mismatchedPermissions);
+            
+            AnsiConsole.WriteLine();
+            var handleInteractively = AnsiConsole.Confirm(
+                $"[yellow]Would you like to review and update these mismatched permissions interactively?[/]", 
+                defaultValue: true);
+            
+            if (handleInteractively)
+            {
+                correctedPermissions = await HandleMismatchedPermissionsInteractivelyAsync(mismatchedPermissions, options);
+            }
+            else
+            {
+                _consoleUIService.ShowInfo("Skipped interactive permission review. Warnings remain in the report.");
+            }
+        }
+
+        // Update result with corrected permissions
+        if (correctedPermissions.Any())
+        {
+            await UpdateResultWithCorrectedPermissions(result, correctedPermissions);
+        }
+
+        // Clear mismatched permissions from result after handling
+        result.MismatchedPermissions = null;
+    }
 
     private async Task<(ProjectScanResult, List<EndpointInfo>)> AnalyzeProjectAsync(ProjectInfo project, ScanOptions options, ProgressTask? progress = null)
     {
@@ -206,8 +235,24 @@ public class PermissionScanService : IPermissionScanService
             // Validate the existing permission against conventions
             var isValid = _permissionGenerator.ValidatePermissionConvention(endpoint, out var suggestedName);
             
+            // If validation passed, add the existing permission to discovered permissions
+            if (isValid && !string.IsNullOrEmpty(endpoint.ExistingPermission))
+            {
+                projectResult.DiscoveredPermissions.Add(new DiscoveredPermission
+                {
+                    Name = endpoint.ExistingPermission,
+                    Description = GeneratePermissionDescription(endpoint.ExistingPermission),
+                    Metadata = new PermissionMetadata
+                    {
+                        HttpMethod = endpoint.HttpMethod,
+                        Route = endpoint.Route,
+                        Project = projectName
+                    }
+                });
+            }
+            
             // If validation failed and we have a suggestion, the endpoint will be marked as MismatchedPermission
-            // This will be picked up by the mismatch detection in ScanAsync
+            // This will be picked up by the mismatch detection in ScanAsync and handled interactively
         }
 
         return Task.CompletedTask;
@@ -262,37 +307,42 @@ public class PermissionScanService : IPermissionScanService
         summary.Warnings = warnings;
     }
 
-    private async Task HandleMismatchedPermissionsInteractivelyAsync(
+    private async Task<List<(string Project, EndpointInfo Endpoint)>> HandleMismatchedPermissionsInteractivelyAsync(
         List<(string Project, EndpointInfo Endpoint)> mismatchedPermissions, 
         ScanOptions options)
     {
         _consoleUIService.ShowInfo($"🔍 Reviewing {mismatchedPermissions.Count} mismatched permission(s) interactively...");
         AnsiConsole.WriteLine();
 
-        var toUpdate = new List<(string Project, EndpointInfo Endpoint, string NewPermission)>();
-        var toKeep = new List<(string Project, EndpointInfo Endpoint)>();
+        var updatedPermissions = new List<(string Project, EndpointInfo Endpoint, string NewPermission)>();
+        var keptPermissions = new List<(string Project, EndpointInfo Endpoint)>();
+        var correctedPermissions = new List<(string Project, EndpointInfo Endpoint)>();
 
         foreach (var (projectName, endpoint) in mismatchedPermissions)
         {
             try
             {
+                var originalPermission = endpoint.ExistingPermission;
                 var decision = await _consoleUIService.PromptPermissionCorrectionAsync(endpoint, projectName);
                 
-                if (decision)
+                if (decision && endpoint.ExistingPermission != originalPermission)
                 {
-                    // User wants to accept the suggestion
-                    toUpdate.Add((projectName, endpoint, endpoint.SuggestedPermission!));
+                    // User accepted suggestion or entered custom permission
+                    updatedPermissions.Add((projectName, endpoint, endpoint.ExistingPermission!));
+                    correctedPermissions.Add((projectName, endpoint));
                 }
                 else
                 {
-                    // User wants to keep existing permission
-                    toKeep.Add((projectName, endpoint));
+                    // User kept current permission
+                    keptPermissions.Add((projectName, endpoint));
+                    correctedPermissions.Add((projectName, endpoint)); // Also add kept permissions to track them
                 }
             }
             catch (Exception ex)
             {
                 _consoleUIService.ShowWarning($"Error handling permission for {projectName}/{endpoint.ClassName}: {ex.Message}");
-                toKeep.Add((projectName, endpoint));
+                keptPermissions.Add((projectName, endpoint));
+                correctedPermissions.Add((projectName, endpoint));
             }
         }
 
@@ -300,37 +350,122 @@ public class PermissionScanService : IPermissionScanService
         AnsiConsole.WriteLine();
         _consoleUIService.ShowInfo("📋 Interactive Review Summary:");
 
-        if (toUpdate.Any())
+        if (updatedPermissions.Any())
         {
-            AnsiConsole.MarkupLine("[green]✅ Permissions to update:[/]");
-            foreach (var (project, endpoint, newPermission) in toUpdate)
+            AnsiConsole.MarkupLine("[green]✅ Permissions updated:[/]");
+            foreach (var (project, endpoint, newPermission) in updatedPermissions)
             {
-                AnsiConsole.MarkupLine($"   • {project}/{endpoint.ClassName}: [red]{endpoint.ExistingPermission}[/] → [green]{newPermission}[/]");
+                AnsiConsole.MarkupLine($"   • {project}/{endpoint.ClassName}: [green]{newPermission}[/]");
             }
             AnsiConsole.WriteLine();
             
-            _consoleUIService.ShowWarning("⚠️  Note: These changes need to be applied manually in your code.");
-            _consoleUIService.ShowInfo("💡 Tip: Use Find & Replace in your IDE to update RequirePermission() calls.");
+            _consoleUIService.ShowWarning("⚠️  Note: Code changes need to be applied manually.");
+            _consoleUIService.ShowInfo("💡 Tip: Update RequirePermission() calls in your source code.");
         }
 
-        if (toKeep.Any())
+        if (keptPermissions.Any())
         {
-            AnsiConsole.MarkupLine("[yellow]📌 Permissions to keep as custom:[/]");
-            foreach (var (project, endpoint) in toKeep)
+            AnsiConsole.MarkupLine("[yellow]📌 Permissions kept as custom:[/]");
+            foreach (var (project, endpoint) in keptPermissions)
             {
-                AnsiConsole.MarkupLine($"   • {project}/{endpoint.ClassName}: [yellow]{endpoint.ExistingPermission}[/] (marked as custom)");
+                AnsiConsole.MarkupLine($"   • {project}/{endpoint.ClassName}: [yellow]{endpoint.ExistingPermission}[/] (custom)");
             }
             AnsiConsole.WriteLine();
         }
 
         // Show final action summary
-        if (toUpdate.Any())
+        if (updatedPermissions.Any())
         {
-            _consoleUIService.ShowSuccess($"🎯 Review completed: {toUpdate.Count} permission(s) approved for update, {toKeep.Count} kept as custom.");
+            _consoleUIService.ShowSuccess($"🎯 Review completed: {updatedPermissions.Count} permission(s) updated, {keptPermissions.Count} kept as custom.");
         }
         else
         {
             _consoleUIService.ShowInfo("✅ All mismatched permissions were kept as custom permissions.");
+        }
+
+        return correctedPermissions;
+    }
+
+    public async Task UpdateResultWithCorrectedPermissions(PermissionDiscoveryResult result, List<(string Project, EndpointInfo Endpoint)> correctedPermissions)
+    {
+        // Add ALL corrected permissions to the result as DiscoveredPermissions
+        // (regardless of which choice user made - suggested, current, or custom)
+        foreach (var (projectName, endpoint) in correctedPermissions)
+        {
+            var project = result.Projects.FirstOrDefault(p => p.Name == projectName);
+            if (project != null && !string.IsNullOrEmpty(endpoint.ExistingPermission))
+            {
+                // Check if this permission already exists in discovered permissions
+                var existingPermission = project.DiscoveredPermissions
+                    .FirstOrDefault(p => p.Metadata.Route == endpoint.Route && p.Metadata.HttpMethod == endpoint.HttpMethod);
+                
+                if (existingPermission != null)
+                {
+                    // Update existing permission with user's final choice
+                    existingPermission.Name = endpoint.ExistingPermission;
+                    existingPermission.Description = GeneratePermissionDescription(endpoint.ExistingPermission);
+                }
+                else
+                {
+                    // Add new permission with user's final choice (suggested, kept, or custom)
+                    project.DiscoveredPermissions.Add(new DiscoveredPermission
+                    {
+                        Name = endpoint.ExistingPermission,
+                        Description = GeneratePermissionDescription(endpoint.ExistingPermission),
+                        Metadata = new PermissionMetadata
+                        {
+                            HttpMethod = endpoint.HttpMethod,
+                            Route = endpoint.Route,
+                            Project = projectName
+                        }
+                    });
+                }
+            }
+        }
+        
+        // Update summary counts to reflect the corrected permissions
+        result.Summary.GeneratedPermissions = result.Projects.Sum(p => p.DiscoveredPermissions.Count);
+    }
+
+    private string GeneratePermissionDescription(string permissionName)
+    {
+        var parts = permissionName.Split('.');
+        if (parts.Length >= 2)
+        {
+            var resource = parts[0].ToLower();
+            var action = parts[1].ToLower();
+            return $"{action} {resource} permission";
+        }
+        return $"{permissionName} permission";
+    }
+
+    public async Task<bool> HandleCSharpFileGenerationAsync(PermissionDiscoveryResult result, ScanOptions options, AppConfig config)
+    {
+        try
+        {
+            // Check if C# file generation should be performed
+            var shouldGenerate = await _csharpGenerator.ShouldGenerateCSharpFileAsync(options, config);
+            
+            if (!shouldGenerate)
+            {
+                return false;
+            }
+
+            // Generate the C# file
+            var success = await _csharpGenerator.GenerateCSharpFileAsync(result, options, config);
+            
+            if (success)
+            {
+                var filePath = _csharpGenerator.GetCSharpFilePath(options, config);
+                _consoleUIService.ShowInfo($"📁 C# file generated at: {filePath}");
+            }
+
+            return success;
+        }
+        catch (Exception ex)
+        {
+            _consoleUIService.ShowError($"C# file generation failed: {ex.Message}");
+            return false;
         }
     }
 } 

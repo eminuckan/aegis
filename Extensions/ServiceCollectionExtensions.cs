@@ -14,6 +14,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPermissionGenerator, PermissionGenerator>();
         services.AddScoped<IPermissionScanService, PermissionScanService>();
         services.AddScoped<IOutputService, OutputService>();
+        services.AddScoped<ICSharpGeneratorService, CSharpGeneratorService>();
         services.AddSingleton<IInteractiveMenuService, InteractiveMenuService>();
 
         return services;

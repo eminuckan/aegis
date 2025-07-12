@@ -599,9 +599,15 @@ public class InteractiveMenuService : IInteractiveMenuService
         
         _consoleUI.ShowScanResults(result, options);
         
+        // Handle mismatched permissions after progress bar completes
+        await _scanService.HandleMismatchedPermissionsAsync(result, options);
+        
         // Her scan sonrası otomatik JSON kaydet
         await _outputService.WriteJsonAsync(result, options.OutputFile!);
         _consoleUI.ShowSuccess($"✅ Permissions saved to {options.OutputFile}");
+        
+        // Handle C# file generation after JSON is saved
+        await _scanService.HandleCSharpFileGenerationAsync(result, options, config);
     }
 
     private async Task RunScanSpecificProject()
@@ -674,9 +680,15 @@ public class InteractiveMenuService : IInteractiveMenuService
         
         _consoleUI.ShowScanResults(result, options);
         
+        // Handle mismatched permissions after progress bar completes
+        await _scanService.HandleMismatchedPermissionsAsync(result, options);
+        
         // Her scan sonrası otomatik JSON kaydet
         await _outputService.WriteJsonAsync(result, options.OutputFile!);
         _consoleUI.ShowSuccess($"✅ {projectName} permissions saved to {options.OutputFile}");
+        
+        // Handle C# file generation after JSON is saved
+        await _scanService.HandleCSharpFileGenerationAsync(result, options, config);
     }
 
     private async Task UpdateScanPath()
@@ -848,6 +860,9 @@ public class InteractiveMenuService : IInteractiveMenuService
         table.AddRow("Verbose Mode", config.SyncPermissions.Verbose.ToString());
         table.AddRow("Auto-Accept", config.SyncPermissions.AcceptAllSuggestedPermissions.ToString());
         table.AddRow("Missing Only", config.SyncPermissions.MissingOnly.ToString());
+        table.AddRow("Generate C# File", config.SyncPermissions.GenerateCSharpFile.ToString());
+        table.AddRow("C# File Name", config.SyncPermissions.CSharpFileName ?? "AppPermissions.cs");
+        table.AddRow("C# Namespace", config.SyncPermissions.CSharpNamespace ?? "Application.Constants");
 
         AnsiConsole.Write(table);
     }

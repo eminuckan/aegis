@@ -4,11 +4,15 @@ namespace SyncPermissions.Models;
 
 public class PermissionDiscoveryResult
 {
-    public string ToolVersion { get; set; } = "1.0.0";
+    public string ToolVersion { get; set; } = "1.0.1";
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
     public string GeneratedBy { get; set; } = "AEGIS v1.0 - Advanced Enterprise Guardian Intelligence System";
     public List<ProjectScanResult> Projects { get; set; } = new();
     public ScanSummary Summary { get; set; } = new();
+    
+    // Internal property for handling mismatched permissions - not serialized to JSON
+    [JsonIgnore]
+    public List<(string Project, EndpointInfo Endpoint)>? MismatchedPermissions { get; set; }
 }
 
 public class ProjectScanResult

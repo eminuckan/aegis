@@ -203,12 +203,12 @@ public class SetupWizardService : ISetupWizardService
         AnsiConsole.WriteLine();
         
         var useDefaults = AnsiConsole.Confirm(
-            "[green]Use default HTTP method and feature folder mappings?[/]", 
+            "[green]Use default HTTP method mappings?[/]", 
             defaultValue: true);
         
         if (useDefaults)
         {
-            // Set default conventions
+            // Set default conventions - only HTTP method mappings
             config.Conventions.HttpMethodActions = new Dictionary<string, string>
             {
                 { "GET", "Read" },
@@ -218,29 +218,14 @@ public class SetupWizardService : ISetupWizardService
                 { "DELETE", "Delete" }
             };
             
-            config.Conventions.FeatureToResource = new Dictionary<string, string>
-            {
-                { "RoleManagement", "Roles" },
-                { "UserManagement", "Users" },
-                { "TenantManagement", "Tenants" },
-                { "PermissionManagement", "Permissions" },
-                { "ClientManagement", "Clients" },
-                { "TenantInvitations", "TenantInvitations" },
-                { "TenantSettings", "TenantSettings" },
-                { "Authentication", "Auth" },
-                { "Authorization", "Auth" },
-                { "UserProfile", "UserProfile" },
-                { "Templates", "Templates" },
-                { "Emails", "Emails" },
-                { "Sms", "Sms" },
-                { "NotificationLogs", "NotificationLogs" }
-            };
+            AnsiConsole.MarkupLine("[dim]✅ HTTP method to action mappings configured[/]");
+            AnsiConsole.MarkupLine("[dim]🤖 Resource names will be auto-inferred from folder structure[/]");
         }
         else
         {
-            AnsiConsole.MarkupLine("[yellow]ℹ️  You can customize conventions manually in aegis-config.json[/]");
+            AnsiConsole.MarkupLine("[yellow]ℹ️  You can customize HTTP method mappings manually in aegis-config.json[/]");
+            AnsiConsole.MarkupLine("[dim]🤖 Resource names will be auto-inferred from folder structure[/]");
             config.Conventions.HttpMethodActions = new Dictionary<string, string>();
-            config.Conventions.FeatureToResource = new Dictionary<string, string>();
         }
         
         AnsiConsole.MarkupLine("[green]✅ Conventions configured[/]");
@@ -265,6 +250,26 @@ public class SetupWizardService : ISetupWizardService
             "[dim]If enabled, mismatched permissions will be auto-corrected without prompting.[/]", 
             defaultValue: false);
         
+        // C# file generation settings
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[bold cyan1]🔧 C# File Generation[/]");
+        
+        config.SyncPermissions.GenerateCSharpFile = AnsiConsole.Confirm(
+            "[green]Generate strongly-typed C# permissions file by default?[/]\n" +
+            "[dim]Creates a C# class with all discovered permissions for easy integration.[/]", 
+            defaultValue: false);
+        
+        if (config.SyncPermissions.GenerateCSharpFile)
+        {
+            config.SyncPermissions.CSharpFileName = AnsiConsole.Ask<string>(
+                "[green]C# file name[/]:", 
+                "AppPermissions.cs");
+                
+            config.SyncPermissions.CSharpNamespace = AnsiConsole.Ask<string>(
+                "[green]Namespace for the generated class[/]:", 
+                "Application.Constants");
+        }
+        
         AnsiConsole.MarkupLine("[green]✅ Additional options configured[/]");
         AnsiConsole.WriteLine();
     }
@@ -277,6 +282,7 @@ public class SetupWizardService : ISetupWizardService
             $"[dim]Output File:[/] [cyan1]{config.SyncPermissions.DefaultOutputPath ?? "Console only"}[/]\n" +
             $"[dim]Verbose:[/] [cyan1]{config.SyncPermissions.Verbose}[/]\n" +
             $"[dim]Auto-Accept Suggestions:[/] [cyan1]{config.SyncPermissions.AcceptAllSuggestedPermissions}[/]\n" +
+            $"[dim]Generate C# File:[/] [cyan1]{config.SyncPermissions.GenerateCSharpFile}[/]\n" +
             $"[dim]Conventions:[/] [cyan1]{(config.Conventions.HttpMethodActions.Any() ? "Default" : "Custom")}[/]\n\n" +
             "[dim]You can now run scans or modify aegis-config.json for advanced options.[/]")
             .Border(BoxBorder.Rounded)

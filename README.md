@@ -13,6 +13,7 @@ A powerful CLI tool to automatically discover and manage permissions in .NET mic
 - ⚙️ **Convention-Based Generation**: Generates permissions following HTTP Method → Action + Feature Folder → Resource conventions
 - ✅ **Validation**: Validates existing permissions against conventions and reports mismatches
 - 📄 **JSON Output**: Structured output format for integration with other tools
+- 🔧 **C# Code Generation**: Creates strongly-typed C# permission classes for easy integration
 - 🎯 **Smart Detection**: Categorizes endpoints as Public, AuthOnly, NeedsPermission, AlreadyProtected, or MismatchedPermission
 - ⚙️ **Configuration Support**: Uses aegis-config.json for default values and convention mappings
 - 🤝 **Interactive Mode**: User-friendly menu system when run without arguments
@@ -84,7 +85,10 @@ Create an `aegis-config.json` file in your project root or working directory:
     "Verbose": false,
     "MissingOnly": false,
     "AutoGenerate": false,
-    "AcceptAllSuggestedPermissions": false
+    "AcceptAllSuggestedPermissions": false,
+    "GenerateCSharpFile": false,
+    "CSharpFileName": "AppPermissions.cs",
+    "CSharpNamespace": "Application.Constants"
   },
   "Conventions": {
     "HttpMethodActions": {
@@ -93,12 +97,6 @@ Create an `aegis-config.json` file in your project root or working directory:
       "PUT": "Update",
       "DELETE": "Delete",
       "PATCH": "Update"
-    },
-    "FeatureToResource": {
-      "RoleManagement": "Roles",
-      "UserManagement": "Users",
-      "TenantManagement": "Tenants",
-      "PermissionManagement": "Permissions"
     }
   }
 }
@@ -199,7 +197,7 @@ Warnings: 2
 ```json
 {
   "metadata": {
-    "toolVersion": "1.0.0",
+    "toolVersion": "1.0.1",
     "generatedAt": "2024-01-15T10:30:00Z",
     "totalEndpoints": 52,
     "totalProjects": 3

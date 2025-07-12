@@ -14,12 +14,14 @@ public class SyncPermissionsConfig
     public bool MissingOnly { get; set; } = false;
     public bool AutoGenerate { get; set; } = false;
     public bool AcceptAllSuggestedPermissions { get; set; } = false;
+    public bool GenerateCSharpFile { get; set; } = false;
+    public string? CSharpFileName { get; set; } = "AppPermissions.cs";
+    public string? CSharpNamespace { get; set; } = "Application.Constants";
 }
 
 public class ConventionsConfig
 {
     public Dictionary<string, string> HttpMethodActions { get; set; } = new();
-    public Dictionary<string, string> FeatureToResource { get; set; } = new();
 }
 
  

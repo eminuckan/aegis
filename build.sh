@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Default values
-VERSION="1.0.0"
+VERSION="1.0.1"
 SKIP_PACK=false
 SKIP_PUBLISH=false
 
@@ -23,7 +23,7 @@ while [[ $# -gt 0 ]]; do
     -h|--help)
       echo "Usage: $0 [OPTIONS]"
       echo "Options:"
-      echo "  -v, --version VERSION    Set version (default: 1.0.0)"
+      echo "  -v, --version VERSION    Set version (default: 1.0.1)"
       echo "  --skip-pack             Skip NuGet package creation"
       echo "  --skip-publish          Skip self-contained executable creation"
       echo "  -h, --help              Show this help message"

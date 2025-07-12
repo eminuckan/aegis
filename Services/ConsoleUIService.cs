@@ -17,6 +17,7 @@ public interface IConsoleUIService
     Task<T> WithProgressAsync<T>(string description, Func<ProgressTask, Task<T>> operation);
     Task<bool> PromptPermissionCorrectionAsync(EndpointInfo endpoint, string projectName);
     void ShowMismatchedPermissionsTable(List<(string Project, EndpointInfo Endpoint)> mismatchedPermissions);
+    bool PromptGenerateCSharpFile();
 }
 
 public class ConsoleUIService : IConsoleUIService
@@ -410,7 +411,29 @@ public class ConsoleUIService : IConsoleUIService
                     "Enter custom permission"
                 }));
 
-        return choice == "Accept suggested permission";
+        switch (choice)
+        {
+            case "Accept suggested permission":
+                endpoint.ExistingPermission = endpoint.SuggestedPermission;
+                endpoint.AuthorizationStatus = EndpointAuthorizationStatus.AlreadyProtected;
+                return true;
+                
+            case "Keep current permission":
+                endpoint.AuthorizationStatus = EndpointAuthorizationStatus.AlreadyProtected;
+                return false;
+                
+            case "Enter custom permission":
+                var customPermission = AnsiConsole.Ask<string>(
+                    $"[{SuccessColor.ToMarkup()}]Enter custom permission name:[/]",
+                    endpoint.ExistingPermission ?? "");
+                endpoint.ExistingPermission = customPermission;
+                endpoint.SuggestedPermission = customPermission;
+                endpoint.AuthorizationStatus = EndpointAuthorizationStatus.AlreadyProtected;
+                return true;
+                
+            default:
+                return false;
+        }
     }
 
     public void ShowMismatchedPermissionsTable(List<(string Project, EndpointInfo Endpoint)> mismatchedPermissions)
@@ -534,4 +557,16 @@ public class ConsoleUIService : IConsoleUIService
             (byte)(a.R + (b.R - a.R) * t),
             (byte)(a.G + (b.G - a.G) * t),
             (byte)(a.B + (b.B - a.B) * t));
+
+    public bool PromptGenerateCSharpFile()
+    {
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine($"[{PrimaryAccent.ToMarkup()}]🔧 C# File Generation[/]");
+        AnsiConsole.MarkupLine($"[{DimTextColor.ToMarkup()}]Generate a strongly-typed C# permissions file alongside the JSON output.[/]");
+        AnsiConsole.WriteLine();
+
+        return AnsiConsole.Confirm(
+            $"[{SuccessColor.ToMarkup()}]Would you like to generate a C# permissions file?[/]", 
+            defaultValue: true);
+    }
 }
